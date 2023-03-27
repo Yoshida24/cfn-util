@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Cunstom domain with HTTPS
+Description: Cunstom domain with HTTPS (Note: Hosted Zone is required)
 
 Parameters:
   DomainName:
     Type: String
-    Description: e.g. dev2.ebipnc.be
+    Description: e.g. www.example.com
   HostedZoneId:
     Type: String
     Description: HostedZoneId from Route53 e.g. Z3XXXXXXXXX (check by aws route53 list-hosted-zones)
