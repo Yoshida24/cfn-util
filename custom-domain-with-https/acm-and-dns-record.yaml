@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Cunstom domain with HTTPS
+
+Parameters:
+  DomainName:
+    Type: String
+    Description: e.g. dev2.ebipnc.be
+  HostedZoneId:
+    Type: String
+    Description: HostedZoneId from Route53 e.g. Z3XXXXXXXXX (check by aws route53 list-hosted-zones)
+  ResourceRecord:
+    Type: String
+    Description: FQDN for CNAME
+
+Resources:
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId : !Ref HostedZoneId
+      Name: !Ref DomainName
+      ResourceRecords:
+        - !Ref ResourceRecord
+      TTL: 300
+      Type: CNAME

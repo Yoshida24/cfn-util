@@ -1,2 +1,2 @@
 # cfn-util
-utility for cloudformation
+CloudFormationでよく使うコードをまとめる。
