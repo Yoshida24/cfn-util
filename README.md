@@ -1,2 +1,2 @@
 # cfn-util
-CloudFormationでよく使うコードをまとめる。
+CloudFormationの便利なスニペットをまとめたリポジトリ
