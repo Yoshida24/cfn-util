@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion : 2010-09-09
+Description: "SQS and Lambda"
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: allowLambdaLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: arn:aws:logs:*:*:*
+        - PolicyName: allowSqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:ChangeMessageVisibility
+              Resource: !GetAtt MyQueue.Arn  
+  LambdaSQSLoadRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+        - PolicyName: allowLambdaLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: arn:aws:logs:*:*:*
+        - PolicyName: allowSqs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action: 
+              - sqs:*
+              Resource: !GetAtt MyQueue.Arn
+  LambdaSQSLoad:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          import json
+          import boto3
+
+          def lambda_handler(event, context):
+              que_name = 'demo-direct-import'
+              sqs = boto3.resource('sqs')
+              queue = sqs.get_queue_by_name(QueueName=que_name)
+              
+              def sqs_send_msg():
+                  msg = [{'Id': '1', 'MessageBody': json.dumps([{'result': "msg_1"}])}]
+                  response = queue.send_messages(Entries=msg)
+                  print(response)
+                  return response
+
+              sqs_send_msg()
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaSQSLoadRole.Arn
+      Runtime: python3.9
+      Timeout: 900
+      MemorySize: 128
+    
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          import json
+          def lambda_handler(event, context):
+            print(event) # Add this line
+            return {
+                'statusCode': 200,
+                'body': json.dumps('Hello from Python!') # Update this line
+            }
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.9
+      Timeout: 90
+      MemorySize: 128
+
+  LambdaFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      Enabled: true
+      ScalingConfig: 
+        MaximumConcurrency: 500
+      EventSourceArn: !GetAtt MyQueue.Arn
+      FunctionName: !GetAtt LambdaFunction.Arn
+
+  MyQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: demo-direct-import
+      DelaySeconds: 0
+      VisibilityTimeout: 120
