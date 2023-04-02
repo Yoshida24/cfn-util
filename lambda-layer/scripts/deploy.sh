@@ -17,7 +17,7 @@ echo "Install lambda dependencies..."
 
 mkdir -p ./tmp_deploy/python
 pip install -r requirements.txt -t ./tmp_deploy/python
-zip -r9 ./tmp_deploy/layer.zip ./tmp_deploy/python
+(cd ./tmp_deploy && zip -r9 layer.zip python)
 
 aws s3 mb s3://${TEMP_LAMBDA_LAYER_BUCKET}
 aws s3 cp ./tmp_deploy/layer.zip s3://${TEMP_LAMBDA_LAYER_BUCKET}/${TEMP_LAMBDA_LAYER_KEY}
